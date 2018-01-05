@@ -99,8 +99,4 @@ void KalmanFilter::UpdateEKF(const VectorXd &z) {
 	MatrixXd I = MatrixXd::Identity(x_size, x_size);
 	P_ = (I - K * H_) * P_;
 
-	//debug
-	cout << "---------- heading ----------" << endl;
-	cout << y[1]<< endl;
-
 }
