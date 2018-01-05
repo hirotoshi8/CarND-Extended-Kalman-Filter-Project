@@ -11,13 +11,13 @@ public:
   // state covariance matrix
   Eigen::MatrixXd P_;
 
-  // state transition matrix
+  // state transition matrix (state prediction matrix)
   Eigen::MatrixXd F_;
 
   // process covariance matrix
   Eigen::MatrixXd Q_;
 
-  // measurement matrix
+  // measurement matrix (state transfer matrix)
   Eigen::MatrixXd H_;
 
   // measurement covariance matrix
