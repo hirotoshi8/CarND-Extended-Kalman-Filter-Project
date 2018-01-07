@@ -45,11 +45,7 @@ FusionEKF::FusionEKF() {
     * Set the process and measurement noises
   */
   //state covariance matrix P
-  ekf_.P_ = MatrixXd(4, 4);
-  ekf_.P_ << 1, 0,    0,    0,
-             0, 1,    0,    0,
-	         0, 0, 1000,    0,
-	         0, 0,    0, 1000;
+  ekf_.P_ = MatrixXd::Identity(4, 4);
 
   //the initial transition matrix F_
   ekf_.F_ = MatrixXd(4, 4);
@@ -60,17 +56,14 @@ FusionEKF::FusionEKF() {
     
   //set the process covariance matrix Q
   ekf_.Q_ = MatrixXd(4, 4);
+#if 0
   ekf_.Q_ << 0, 0,  0,    0,
              0, 0,  0,    0,
 	         0, 0,  0,    0,
 	         0, 0,  0,    0;
-
+#endif
   H_laser_ << 1, 0, 0, 0,
               0, 1, 0, 0;
-
-  Hj_ << 0, 0, 0, 0,
-         0, 0, 0, 0,
-         0, 0, 0, 0;
 }
 
 /**
@@ -101,22 +94,18 @@ void FusionEKF::ProcessMeasurement(const MeasurementPackage &measurement_pack) {
 		*/
 		cout << "EKF with first Radar: " << endl;
 		//get the variables
-		float ro = measurement_pack.raw_measurements_[0];
-		float theta = measurement_pack.raw_measurements_[1];
-		float ro_dot = measurement_pack.raw_measurements_[2];
+		double ro = measurement_pack.raw_measurements_[0];
+		double theta = measurement_pack.raw_measurements_[1];
+		double ro_dot = measurement_pack.raw_measurements_[2];
 
-		float px = ro * cos(theta);
-		float py = ro * sin(theta);
-		float vx = ro_dot * cos(theta);
-		float vy = ro_dot * sin(theta);
+		double px = ro * cos(theta);
+		double py = ro * sin(theta);
+		double vx = ro_dot * cos(theta);
+		double vy = ro_dot * sin(theta);
 
 		//set the state with the initial location (and zero velocity ?)
   		ekf_.x_ << px, py, vx, vy;
 	  	
-		//Update the Transfer Matrix "H" with Jacobian
-		ekf_.H_ = MatrixXd(3, 4);
-		ekf_.H_ = tool.CalculateJacobian(ekf_.x_);
-
 		//Update the Covariance Matrix "R" of Radar
 		ekf_.R_ = MatrixXd(3,3);
 		ekf_.R_ = R_radar_;
@@ -129,18 +118,14 @@ void FusionEKF::ProcessMeasurement(const MeasurementPackage &measurement_pack) {
 		cout << "EKF with first Laser: " << endl;
 		//cout << measurement_pack.raw_measurements_ << endl;
 		//set the state with the initial location (and zero velocity ?)
-		float px = measurement_pack.raw_measurements_[0];
-		float py = measurement_pack.raw_measurements_[1];
-		float vx = 0;
-		float vy = 0;
+		double px = measurement_pack.raw_measurements_[0];
+		double py = measurement_pack.raw_measurements_[1];
+		double vx = 0;
+		double vy = 0;
       
 		//cout << measurement_pack.raw_measurements_ << endl;
 		ekf_.x_ << px, py, vx, vy;
-      
-		//Update the Transfer Matrix "H"
-		ekf_.H_ = MatrixXd(2,4);
-		ekf_.H_ = H_laser_;
-      
+            
 		//Update the Covariance Matrix "R" of Radar
 		ekf_.R_ = MatrixXd(2,2);
 		ekf_.R_ = R_laser_;
@@ -172,11 +157,11 @@ void FusionEKF::ProcessMeasurement(const MeasurementPackage &measurement_pack) {
   //debug
   cout << "********** Prediction: ********** " << endl;
 
-  float noise_ax = 9;
-  float noise_ay = 9;
+  double noise_ax = 9;
+  double noise_ay = 9;
 
   //compute the time elapsed between the current and previous measurements
-  float dt = (measurement_pack.timestamp_ - previous_timestamp_) / 1000000.0;//dt - expressed in seconds
+  double dt = (measurement_pack.timestamp_ - previous_timestamp_) / 1000000.0;//dt - expressed in seconds
   //Update the previous time
   previous_timestamp_ = measurement_pack.timestamp_;
   
@@ -185,9 +170,9 @@ void FusionEKF::ProcessMeasurement(const MeasurementPackage &measurement_pack) {
   ekf_.F_(1, 3) = dt;
 
   //set the process covariance matrix Q (Process noise)
-  float dt_2 = dt * dt;
-  float dt_3 = dt_2 * dt;
-  float dt_4 = dt_3 * dt;
+  double dt_2 = dt * dt;
+  double dt_3 = dt_2 * dt;
+  double dt_4 = dt_3 * dt;
 
   ekf_.Q_ = MatrixXd(4, 4);
   ekf_.Q_ <<  dt_4/4*noise_ax,               0, dt_3/2*noise_ax,               0,
@@ -222,10 +207,9 @@ void FusionEKF::ProcessMeasurement(const MeasurementPackage &measurement_pack) {
     
 	  //Measurement of the Radar
 	  VectorXd z_rader(3);
-	  float ro     = measurement_pack.raw_measurements_[0];
-	  float theta  = measurement_pack.raw_measurements_[1];
-	  float ro_dot = measurement_pack.raw_measurements_[2];
-	  z_rader << ro, theta, ro_dot;
+	  z_rader(0) = measurement_pack.raw_measurements_[0]; //ro
+	  z_rader(1) = measurement_pack.raw_measurements_[1]; //theta
+	  z_rader(2) = measurement_pack.raw_measurements_[2]; //ro_dot
     
 	  cout << "Radar Update: EKF" << endl;
 	  ekf_.UpdateEKF(z_rader);

@@ -1,5 +1,6 @@
 #include "kalman_filter.h"
 #include <iostream>
+#include <math.h>
 
 using namespace std;
 
@@ -35,12 +36,13 @@ void KalmanFilter::Update(const VectorXd &z) {
   TODO:
     * update the state by using Kalman Filter equations
   */
+  MatrixXd Ht = H_.transpose();
+  MatrixXd PHt = P_ * Ht;
+
   VectorXd z_pred = H_ * x_;
   VectorXd y = z - z_pred;
-  MatrixXd Ht = H_.transpose();
-  MatrixXd S = H_ * P_ * Ht + R_;
+  MatrixXd S = H_ * PHt + R_;
   MatrixXd Si = S.inverse();
-  MatrixXd PHt = P_ * Ht;
   MatrixXd K = PHt * Si;
 
   //Update the posterior state
@@ -57,35 +59,34 @@ void KalmanFilter::UpdateEKF(const VectorXd &z) {
 	*/
 	VectorXd z_pred(3);
   
-	float px = x_[0];
-	float py = x_[1];
-	float vx = x_[2];
-	float vy = x_[3];
+	double px = x_[0];
+	double py = x_[1];
+	double vx = x_[2];
+	double vy = x_[3];
   
-	float p2     = px*px + py*py;
-	float sqrt_p = sqrt(p2); // pow(p2, 0.5);
+	double p2     = px*px + py*py;
+	double sqrt_p = sqrt(p2); // pow(p2, 0.5);
   
-	float ro_hat = sqrt_p;
-	float theta_hat = atan2(py,px);
-	float ro_dot_hat = 0;
+	double ro_hat = sqrt_p;
+	double theta_hat = atan2(py,px);
+	double ro_dot_hat = (px*vx + py*vy) / sqrt_p;
 
 	//check division by zero
+#if 0
 	if (p2 == 0) {
 		ro_dot_hat = 0;
 	}else {
 		ro_dot_hat = (px*vx + py*vy) / sqrt_p;
 	}
+#endif
 	//Calculate the measurement based on the state prediction
 	z_pred << ro_hat, theta_hat, ro_dot_hat;
 
 	//Update
 	VectorXd y = z - z_pred;	//VectorXd z_pred = H_ * x_;
 
-	if (y[1] > M_PI) {
-		y[1] -= 2 * M_PI;
-	}else if (y[1] < -M_PI) {
-		y[1] += 2 + M_PI;
-	}else { /* Nothing to do */ }
+	while(y[1] > M_PI) y[1] -= 2 * M_PI;
+	while(y[1] <-M_PI) y[1] += 2 + M_PI;
 
 	MatrixXd Hjt = H_.transpose();
 	MatrixXd S = H_ * P_ * Hjt + R_;

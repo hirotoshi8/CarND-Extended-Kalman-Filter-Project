@@ -28,7 +28,7 @@ VectorXd Tools::CalculateRMSE(const vector<VectorXd> &estimations,
   }
 
   //accumulate squared residuals
-  for(unsigned int i=0; i < estimations.size(); ++i){
+  for(int i=0; i < estimations.size(); ++i){
 
     VectorXd residual = estimations[i] - ground_truth[i];
 
@@ -61,18 +61,24 @@ MatrixXd Tools::CalculateJacobian(const VectorXd& x_state) {
 
   //TODO: YOUR CODE HERE
   float p2     = px*px + py*py;
-  float sqrt_p = pow(p2,0.5);
+  float sqrt_p = sqrt(p2);
+  float k = p2*sqrt_p;
   //check division by zero
-  if (p2==0){
-    Hj << 0,0,0,0,
-          0,0,0,0,
-          0,0,0,0;
-    return Hj;
+  if (fabs(p2) < 0.0001){
+	  cout << "CalculateJacobian () - Error - Division by Zero" << endl;
+	  return Hj;
   }
+#if 0
   //compute the Jacobian matrix
   Hj << px/sqrt_p                       ,   py/sqrt_p, 0, 0,
         -py/p2                          , px/p2      , 0, 0,
         py*(vx*py - vy*px)/(pow(p2,3/2)), px*(vy*px - vx*py)/(pow(p2,3/2)), px/sqrt_p, py/sqrt_p;
+#endif
+  //compute the Jacobian matrix
+  Hj << px / sqrt_p, py / sqrt_p, 0, 0,
+	  -py / p2, px / p2, 0, 0,
+	  py*(vx*py - vy*px)/k, px*(vy*px - vx*py)/k, px/sqrt_p, py/sqrt_p;
+
 
   return Hj;
 }
